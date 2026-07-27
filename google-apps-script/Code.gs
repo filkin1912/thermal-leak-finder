@@ -1,10 +1,12 @@
 /**
- * Hydro-inspect — form + file attachments via Gmail.
+ * Hydro-inspect — form + optional file → email.
+ * Called from Cloud Run /api/contact (server-side).
  *
- * IMPORTANT: Web3Forms free plan blocks server-side sends, so files must
- * go through GmailApp. Redeploy after every change:
- * Deploy → Manage deployments → pencil → New version → Deploy
- * Execute as: Me | Who has access: Anyone
+ * ONE-TIME SETUP (required for attachments):
+ * 1. Paste this file into script.google.com
+ * 2. Select function testSend → Run → Allow/Authorize all mail permissions
+ * 3. Deploy → Manage deployments → New version → Deploy
+ *    Execute as: Me | Who has access: Anyone
  */
 var TO_EMAIL = "hydroinspect@gmail.com";
 
@@ -30,28 +32,25 @@ function doPost(e) {
       "\n\nСъобщение:\n" +
       message;
 
-    var options = {
+    var mail = {
+      to: TO_EMAIL,
+      subject: "Хидроинспект — ново запитване",
+      body: body,
       name: "Хидроинспект",
       replyTo: email,
     };
 
-    if (data.attachment && data.attachmentName && data.attachmentType) {
+    if (data.attachment && data.attachmentName) {
       var bytes = Utilities.base64Decode(String(data.attachment));
-      options.attachments = [
-        Utilities.newBlob(
-          bytes,
-          String(data.attachmentType),
-          String(data.attachmentName)
-        ),
-      ];
+      var safeName = String(data.attachmentName)
+        .replace(/[\\\/\?\%\*\:\|\"<>]/g, "_")
+        .slice(0, 180);
+      var mime = String(data.attachmentType || "application/octet-stream");
+      mail.attachments = [Utilities.newBlob(bytes, mime, safeName || "file")];
     }
 
-    GmailApp.sendEmail(
-      TO_EMAIL,
-      "Хидроинспект — ново запитване",
-      body,
-      options
-    );
+    // MailApp scope is simpler to authorize than GmailApp for web apps
+    MailApp.sendEmail(mail);
 
     return json_({ success: true });
   } catch (err) {
@@ -61,6 +60,16 @@ function doPost(e) {
 
 function doGet() {
   return json_({ ok: true, service: "hydro-inspect-mailer" });
+}
+
+/** Run once from the editor to trigger the mail permission prompt. */
+function testSend() {
+  MailApp.sendEmail({
+    to: TO_EMAIL,
+    subject: "Хидроинспект — тест",
+    body: "Тестът е успешен. Формата може да изпраща имейли с прикачени файлове.",
+    name: "Хидроинспект",
+  });
 }
 
 function json_(obj) {

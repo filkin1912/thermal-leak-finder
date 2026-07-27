@@ -78,11 +78,6 @@
   }
 
   if (form && status) {
-    // Create key at https://web3forms.com while logged in as hydroinspect@gmail.com
-    const WEB3FORMS_ACCESS_KEY = "3f00e71d-0b22-4d02-be8e-e80a3ae777a9";
-    // File submissions use Gmail via Apps Script (Web3Forms free has no attachments)
-    const ATTACHMENT_SCRIPT_URL =
-      "https://script.google.com/macros/s/AKfycbz_g_l4qRYuCLZokUulYcVVktgdBxspoq0eASGIufhQJsmXEwsTLliBMuy0l_iBFBIx/exec";
     const MAX_FILE_BYTES = 4 * 1024 * 1024;
     const submitBtn = form.querySelector('button[type="submit"]');
     const nameInput = form.querySelector("#name");
@@ -121,75 +116,6 @@
       input.setCustomValidity(message);
       input.reportValidity();
       status.textContent = message;
-    };
-
-    const readFileAsBase64 = (file) =>
-      new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = String(reader.result || "");
-          resolve(result.includes(",") ? result.split(",")[1] : result);
-        };
-        reader.onerror = () => reject(reader.error || new Error("read failed"));
-        reader.readAsDataURL(file);
-      });
-
-    const sendViaAppsScript = async (payload) => {
-      const response = await fetch(ATTACHMENT_SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        redirect: "follow",
-        body: JSON.stringify(payload),
-      });
-
-      // Apps Script may block reading JSON (CORS) even when mail was sent.
-      // If we get a network response, treat HTTP errors as failure; otherwise OK.
-      if (!response.ok) {
-        throw new Error("Apps Script HTTP " + response.status);
-      }
-
-      const text = await response.text().catch(() => "");
-      if (text) {
-        try {
-          const result = JSON.parse(text);
-          if (result && result.success === false) {
-            throw new Error(result.message || "Apps Script rejected");
-          }
-        } catch (parseErr) {
-          if (parseErr instanceof SyntaxError) {
-            // Non-JSON body after redirect — request still reached the script
-          } else {
-            throw parseErr;
-          }
-        }
-      }
-    };
-
-    const sendViaWeb3Forms = async ({ name, phone, email, message, fileNote }) => {
-      const payload = {
-        access_key: WEB3FORMS_ACCESS_KEY,
-        subject: "Хидроинспект — ново запитване",
-        from_name: "Хидроинспект",
-        replyto: email,
-        Име: name,
-        Телефон: phone,
-        Имейл: email,
-        Съобщение: fileNote ? message + "\n\n" + fileNote : message,
-      };
-
-      const response = await fetch("https://api.web3forms.com/submit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || result.success === false) {
-        throw new Error(result.message || "Send failed");
-      }
     };
 
     if (phoneInput) {
@@ -285,50 +211,33 @@
         return;
       }
 
-      if (!WEB3FORMS_ACCESS_KEY) {
-        status.textContent =
-          "Формата още не е свързана. Нужен е Web3Forms access key за hydroinspect@gmail.com.";
-        return;
-      }
-
       const name = String(nameInput.value || "").trim();
       const phone = String(phoneInput.value || "").trim();
       const email = String(emailInput.value || "").trim();
       const message = String(messageInput.value || "").trim();
 
-      status.textContent = "Изпращане…";
+      status.textContent = file ? "Изпращане с файл…" : "Изпращане…";
       if (submitBtn) submitBtn.disabled = true;
 
       try {
+        // Same-origin API on Cloud Run → Apps Script → Gmail (attachments work)
+        const body = new FormData();
+        body.append("name", name);
+        body.append("phone", phone);
+        body.append("email", email);
+        body.append("message", message);
         if (file) {
-          // Real attachments: Gmail via Apps Script (no third-party upload hang)
-          status.textContent = "Изпращане с файл…";
-          const attachment = await readFileAsBase64(file);
-          try {
-            await sendViaAppsScript({
-              name,
-              phone,
-              email,
-              message,
-              attachment,
-              attachmentName: file.name,
-              attachmentType: file.type || "application/octet-stream",
-            });
-          } catch (scriptError) {
-            // Still deliver the text inquiry if script/CORS fails
-            status.textContent = "Изпращане…";
-            await sendViaWeb3Forms({
-              name,
-              phone,
-              email,
-              message,
-              fileNote:
-                "Клиентът прикачи файл, но прикачването не успя: " + file.name,
-            });
-          }
-        } else {
-          status.textContent = "Изпращане…";
-          await sendViaWeb3Forms({ name, phone, email, message });
+          body.append("attachment", file, file.name);
+        }
+
+        const response = await fetch("/api/contact", {
+          method: "POST",
+          body,
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.success === false) {
+          throw new Error(result.message || "Send failed");
         }
 
         form.reset();

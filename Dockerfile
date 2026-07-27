@@ -1,19 +1,20 @@
-# Static site — nginx
-FROM nginx:1.27-alpine
+# Node static site + contact API
+FROM node:20-alpine
 
-# Remove default nginx site content
-RUN rm -rf /usr/share/nginx/html/*
+WORKDIR /app
 
-# Custom nginx config (SPA-friendly static hosting)
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY package.json ./
+RUN npm install --omit=dev
 
-# Site files
-COPY index.html styles.css app.js robots.txt sitemap.xml /usr/share/nginx/html/
-COPY images/ /usr/share/nginx/html/images/
+COPY server.js ./
+COPY index.html styles.css app.js robots.txt sitemap.xml ./
+COPY images/ ./images/
 
-EXPOSE 80
+ENV NODE_ENV=production
+ENV PORT=8080
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -qO- http://127.0.0.1/ > /dev/null || exit 1
+  CMD wget -qO- http://127.0.0.1:8080/healthz > /dev/null || exit 1
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["node", "server.js"]
