@@ -242,61 +242,74 @@
       if (submitBtn) submitBtn.disabled = true;
 
       try {
-        // With file: Apps Script uploads to Drive + notifies via Web3Forms
-        // (so inbox shows Хидроинспект, not "me")
-        // Without file: Web3Forms only
+        let fileUrl = "";
+        let fileName = "";
+
+        // Optional upload — never blocks the main Web3Forms email
         if (file) {
-          status.textContent = "Качване и изпращане…";
-          const attachment = await readFileAsBase64(file);
-          const response = await fetch(ATTACHMENT_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({
-              name,
-              phone,
-              email,
-              message,
-              attachment,
-              attachmentName: file.name,
-              attachmentType: file.type,
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error("Attachment send failed");
+          status.textContent = "Качване на файла…";
+          try {
+            const attachment = await readFileAsBase64(file);
+            const uploadRes = await fetch(ATTACHMENT_SCRIPT_URL, {
+              method: "POST",
+              headers: { "Content-Type": "text/plain;charset=utf-8" },
+              body: JSON.stringify({
+                action: "upload",
+                attachment,
+                attachmentName: file.name,
+                attachmentType: file.type,
+              }),
+            });
+            const uploadJson = await uploadRes.json().catch(() => ({}));
+            if (uploadRes.ok && uploadJson.success && uploadJson.fileUrl) {
+              fileUrl = uploadJson.fileUrl;
+              fileName = uploadJson.fileName || file.name;
+            }
+          } catch (uploadError) {
+            fileUrl = "";
           }
-        } else {
-          const response = await fetch("https://api.web3forms.com/submit", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify({
-              access_key: WEB3FORMS_ACCESS_KEY,
-              subject: "Хидроинспект — ново запитване",
-              from_name: "Хидроинспект",
-              replyto: email,
-              Име: name,
-              Телефон: phone,
-              Имейл: email,
-              Съобщение: message,
-            }),
-          });
+        }
 
-          const result = await response.json().catch(() => ({}));
+        status.textContent = "Изпращане…";
+        const payload = {
+          access_key: WEB3FORMS_ACCESS_KEY,
+          subject: "Хидроинспект — ново запитване",
+          from_name: "Хидроинспект",
+          replyto: email,
+          Име: name,
+          Телефон: phone,
+          Имейл: email,
+          Съобщение: message,
+        };
 
-          if (!response.ok || result.success === false) {
-            throw new Error(result.message || "Send failed");
-          }
+        if (fileUrl) {
+          payload["Прикачен файл"] = fileUrl;
+          payload["Име на файла"] = fileName;
+        } else if (file) {
+          payload["Прикачен файл"] =
+            "Файлът не можа да се качи. Клиентът опита да прикачи: " + file.name;
+        }
+
+        const response = await fetch("https://api.web3forms.com/submit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || result.success === false) {
+          throw new Error(result.message || "Send failed");
         }
 
         form.reset();
         status.textContent = "Благодарим Ви! Вашето запитване е изпратено успешно!";
       } catch (error) {
-        status.textContent = file
-          ? "Файлът не беше изпратен. Обновете Google Apps Script (нов Deploy) и опитайте отново."
-          : "Запитването не беше изпратено. Проверете интернет връзката или опитайте отново.";
+        status.textContent =
+          "Запитването не беше изпратено. Проверете интернет връзката или опитайте отново.";
       } finally {
         if (submitBtn) submitBtn.disabled = false;
       }
