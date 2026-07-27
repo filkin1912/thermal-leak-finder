@@ -135,47 +135,63 @@
       });
 
     const uploadFileForEmail = async (file) => {
-      // Primary: tmpfiles.org (works from browser, returns viewable link)
-      try {
+      const tryLitterbox = async () => {
+        const body = new FormData();
+        body.append("reqtype", "fileupload");
+        body.append("time", "72h");
+        body.append("fileToUpload", file);
+        const res = await fetch("https://litterbox.catbox.moe/resources/internals/api.php", {
+          method: "POST",
+          body,
+        });
+        const text = (await res.text()).trim();
+        if (!res.ok || !/^https?:\/\//i.test(text)) {
+          throw new Error("litterbox failed");
+        }
+        return { fileUrl: text, fileName: file.name };
+      };
+
+      const tryTmpfiles = async () => {
         const body = new FormData();
         body.append("file", file);
-        body.append("expire", "172800"); // 48 hours
+        body.append("expire", "172800");
         const res = await fetch("https://tmpfiles.org/api/v1/upload", {
           method: "POST",
           body,
         });
         const json = await res.json().catch(() => ({}));
-        if (res.ok && json.status === "success" && json.data && json.data.url) {
-          return {
-            fileUrl: String(json.data.url).replace("tmpfiles.org/", "tmpfiles.org/dl/"),
-            fileName: file.name,
-          };
+        if (!(res.ok && json.status === "success" && json.data && json.data.url)) {
+          throw new Error("tmpfiles failed");
         }
-      } catch (error) {
-        // fall through to Apps Script
-      }
+        return {
+          fileUrl: String(json.data.url).replace("tmpfiles.org/", "tmpfiles.org/dl/"),
+          fileName: file.name,
+        };
+      };
 
-      // Fallback: Google Drive via Apps Script
-      const attachment = await readFileAsBase64(file);
-      const uploadRes = await fetch(ATTACHMENT_SCRIPT_URL, {
+      try {
+        return await tryLitterbox();
+      } catch (e1) {
+        try {
+          return await tryTmpfiles();
+        } catch (e2) {
+          throw new Error("public upload failed");
+        }
+      }
+    };
+
+    const sendViaAppsScript = async (payload) => {
+      const response = await fetch(ATTACHMENT_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({
-          action: "upload",
-          attachment,
-          attachmentName: file.name,
-          attachmentType: file.type,
-        }),
+        redirect: "follow",
+        body: JSON.stringify(payload),
       });
-      const uploadJson = await uploadRes.json().catch(() => ({}));
-      if (uploadRes.ok && uploadJson.success && uploadJson.fileUrl) {
-        return {
-          fileUrl: uploadJson.fileUrl,
-          fileName: uploadJson.fileName || file.name,
-        };
+      if (!response.ok) {
+        throw new Error("Apps Script failed");
       }
-
-      throw new Error("upload failed");
+      // Body may be unreadable due to CORS; ok status is enough when script sends email
+      return true;
     };
 
     if (phoneInput) {
@@ -288,8 +304,8 @@
       try {
         let fileUrl = "";
         let fileName = "";
+        let sent = false;
 
-        // Optional upload — never blocks the main Web3Forms email
         if (file) {
           status.textContent = "Качване на файла…";
           try {
@@ -297,43 +313,54 @@
             fileUrl = uploaded.fileUrl;
             fileName = uploaded.fileName;
           } catch (uploadError) {
-            fileUrl = "";
+            // Last resort: Apps Script uploads to Drive and sends Web3Forms email
+            status.textContent = "Изпращане с файл…";
+            const attachment = await readFileAsBase64(file);
+            await sendViaAppsScript({
+              name,
+              phone,
+              email,
+              message,
+              attachment,
+              attachmentName: file.name,
+              attachmentType: file.type,
+            });
+            sent = true;
           }
         }
 
-        status.textContent = "Изпращане…";
-        const payload = {
-          access_key: WEB3FORMS_ACCESS_KEY,
-          subject: "Хидроинспект — ново запитване",
-          from_name: "Хидроинспект",
-          replyto: email,
-          Име: name,
-          Телефон: phone,
-          Имейл: email,
-          Съобщение: message,
-        };
+        if (!sent) {
+          status.textContent = "Изпращане…";
+          const payload = {
+            access_key: WEB3FORMS_ACCESS_KEY,
+            subject: "Хидроинспект — ново запитване",
+            from_name: "Хидроинспект",
+            replyto: email,
+            Име: name,
+            Телефон: phone,
+            Имейл: email,
+            Съобщение: message,
+          };
 
-        if (fileUrl) {
-          payload["Прикачен файл"] = fileUrl;
-          payload["Име на файла"] = fileName;
-        } else if (file) {
-          payload["Прикачен файл"] =
-            "Файлът не можа да се качи. Клиентът опита да прикачи: " + file.name;
-        }
+          if (fileUrl) {
+            payload["Прикачен файл"] = fileUrl;
+            payload["Име на файла"] = fileName;
+          }
 
-        const response = await fetch("https://api.web3forms.com/submit", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
+          const response = await fetch("https://api.web3forms.com/submit", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
 
-        const result = await response.json().catch(() => ({}));
+          const result = await response.json().catch(() => ({}));
 
-        if (!response.ok || result.success === false) {
-          throw new Error(result.message || "Send failed");
+          if (!response.ok || result.success === false) {
+            throw new Error(result.message || "Send failed");
+          }
         }
 
         form.reset();
