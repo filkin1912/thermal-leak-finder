@@ -134,6 +134,50 @@
         reader.readAsDataURL(file);
       });
 
+    const uploadFileForEmail = async (file) => {
+      // Primary: tmpfiles.org (works from browser, returns viewable link)
+      try {
+        const body = new FormData();
+        body.append("file", file);
+        body.append("expire", "172800"); // 48 hours
+        const res = await fetch("https://tmpfiles.org/api/v1/upload", {
+          method: "POST",
+          body,
+        });
+        const json = await res.json().catch(() => ({}));
+        if (res.ok && json.status === "success" && json.data && json.data.url) {
+          return {
+            fileUrl: String(json.data.url).replace("tmpfiles.org/", "tmpfiles.org/dl/"),
+            fileName: file.name,
+          };
+        }
+      } catch (error) {
+        // fall through to Apps Script
+      }
+
+      // Fallback: Google Drive via Apps Script
+      const attachment = await readFileAsBase64(file);
+      const uploadRes = await fetch(ATTACHMENT_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "upload",
+          attachment,
+          attachmentName: file.name,
+          attachmentType: file.type,
+        }),
+      });
+      const uploadJson = await uploadRes.json().catch(() => ({}));
+      if (uploadRes.ok && uploadJson.success && uploadJson.fileUrl) {
+        return {
+          fileUrl: uploadJson.fileUrl,
+          fileName: uploadJson.fileName || file.name,
+        };
+      }
+
+      throw new Error("upload failed");
+    };
+
     if (phoneInput) {
       phoneInput.addEventListener("input", () => {
         sanitizePhone();
@@ -249,22 +293,9 @@
         if (file) {
           status.textContent = "Качване на файла…";
           try {
-            const attachment = await readFileAsBase64(file);
-            const uploadRes = await fetch(ATTACHMENT_SCRIPT_URL, {
-              method: "POST",
-              headers: { "Content-Type": "text/plain;charset=utf-8" },
-              body: JSON.stringify({
-                action: "upload",
-                attachment,
-                attachmentName: file.name,
-                attachmentType: file.type,
-              }),
-            });
-            const uploadJson = await uploadRes.json().catch(() => ({}));
-            if (uploadRes.ok && uploadJson.success && uploadJson.fileUrl) {
-              fileUrl = uploadJson.fileUrl;
-              fileName = uploadJson.fileName || file.name;
-            }
+            const uploaded = await uploadFileForEmail(file);
+            fileUrl = uploaded.fileUrl;
+            fileName = uploaded.fileName;
           } catch (uploadError) {
             fileUrl = "";
           }
