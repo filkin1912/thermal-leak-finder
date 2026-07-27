@@ -80,9 +80,6 @@
   if (form && status) {
     // Create key at https://web3forms.com while logged in as hydroinspect@gmail.com
     const WEB3FORMS_ACCESS_KEY = "3f00e71d-0b22-4d02-be8e-e80a3ae777a9";
-    // Used when a file is attached (Web3Forms free plan has no attachments)
-    const ATTACHMENT_SCRIPT_URL =
-      "https://script.google.com/macros/s/AKfycbz_g_l4qRYuCLZokUulYcVVktgdBxspoq0eASGIufhQJsmXEwsTLliBMuy0l_iBFBIx/exec";
     const MAX_FILE_BYTES = 4 * 1024 * 1024;
     const submitBtn = form.querySelector('button[type="submit"]');
     const nameInput = form.querySelector("#name");
@@ -123,17 +120,6 @@
       status.textContent = message;
     };
 
-    const readFileAsBase64 = (file) =>
-      new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          const result = String(reader.result || "");
-          resolve(result.includes(",") ? result.split(",")[1] : result);
-        };
-        reader.onerror = () => reject(reader.error || new Error("read failed"));
-        reader.readAsDataURL(file);
-      });
-
     const uploadFileForEmail = async (file) => {
       const tryLitterbox = async () => {
         const body = new FormData();
@@ -172,26 +158,8 @@
       try {
         return await tryLitterbox();
       } catch (e1) {
-        try {
-          return await tryTmpfiles();
-        } catch (e2) {
-          throw new Error("public upload failed");
-        }
+        return await tryTmpfiles();
       }
-    };
-
-    const sendViaAppsScript = async (payload) => {
-      const response = await fetch(ATTACHMENT_SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        redirect: "follow",
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        throw new Error("Apps Script failed");
-      }
-      // Body may be unreadable due to CORS; ok status is enough when script sends email
-      return true;
     };
 
     if (phoneInput) {
@@ -304,7 +272,6 @@
       try {
         let fileUrl = "";
         let fileName = "";
-        let sent = false;
 
         if (file) {
           status.textContent = "Качване на файла…";
@@ -313,54 +280,45 @@
             fileUrl = uploaded.fileUrl;
             fileName = uploaded.fileName;
           } catch (uploadError) {
-            // Last resort: Apps Script uploads to Drive and sends Web3Forms email
-            status.textContent = "Изпращане с файл…";
-            const attachment = await readFileAsBase64(file);
-            await sendViaAppsScript({
-              name,
-              phone,
-              email,
-              message,
-              attachment,
-              attachmentName: file.name,
-              attachmentType: file.type,
-            });
-            sent = true;
+            fileUrl = "";
+            fileName = file.name;
           }
         }
 
-        if (!sent) {
-          status.textContent = "Изпращане…";
-          const payload = {
-            access_key: WEB3FORMS_ACCESS_KEY,
-            subject: "Хидроинспект — ново запитване",
-            from_name: "Хидроинспект",
-            replyto: email,
-            Име: name,
-            Телефон: phone,
-            Имейл: email,
-            Съобщение: message,
-          };
+        // Always send through Web3Forms (reliable inbox delivery as Хидроинспект)
+        status.textContent = "Изпращане…";
+        const payload = {
+          access_key: WEB3FORMS_ACCESS_KEY,
+          subject: "Хидроинспект — ново запитване",
+          from_name: "Хидроинспект",
+          replyto: email,
+          Име: name,
+          Телефон: phone,
+          Имейл: email,
+          Съобщение: message,
+        };
 
-          if (fileUrl) {
-            payload["Прикачен файл"] = fileUrl;
-            payload["Име на файла"] = fileName;
-          }
+        if (fileUrl) {
+          payload["Прикачен файл"] = fileUrl;
+          payload["Име на файла"] = fileName;
+        } else if (file) {
+          payload["Забележка за файл"] =
+            "Клиентът опита да прикачи файл, но качването не успя: " + fileName;
+        }
 
-          const response = await fetch("https://api.web3forms.com/submit", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify(payload),
-          });
+        const response = await fetch("https://api.web3forms.com/submit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
 
-          const result = await response.json().catch(() => ({}));
+        const result = await response.json().catch(() => ({}));
 
-          if (!response.ok || result.success === false) {
-            throw new Error(result.message || "Send failed");
-          }
+        if (!response.ok || result.success === false) {
+          throw new Error(result.message || "Send failed");
         }
 
         form.reset();
