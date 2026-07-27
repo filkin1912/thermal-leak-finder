@@ -237,14 +237,21 @@
 
         const result = await response.json().catch(() => ({}));
         if (!response.ok || result.success === false) {
-          throw new Error(result.message || "Send failed");
+          const detail = String(result.message || "");
+          if (/permission|разреш|Authorization|auth/i.test(detail)) {
+            throw new Error(
+              "Имейл услугата още не е активирана. В Apps Script пусни testSend → Allow, после Deploy → New version."
+            );
+          }
+          throw new Error(detail || "Send failed");
         }
 
         form.reset();
         status.textContent = "Благодарим Ви! Вашето запитване е изпратено успешно!";
       } catch (error) {
         status.textContent =
-          "Запитването не беше изпратено. Проверете интернет връзката или опитайте отново.";
+          (error && error.message) ||
+          "Запитването не беше изпратено. Опитайте отново след малко.";
       } finally {
         if (submitBtn) submitBtn.disabled = false;
       }
