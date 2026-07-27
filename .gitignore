@@ -1,0 +1,18 @@
+# Dependencies / local
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.*
+
+# Editor / OS
+.cursor/
+.vscode/
+*.swp
+
+# Secrets / keys
+*-key.json
+gcp-sa-key.json
+**/credentials*.json
+.gcloud/
