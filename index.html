@@ -390,6 +390,11 @@
             <label for="message">Съобщение</label>
             <textarea id="message" name="message" rows="2" required placeholder="Баня, кухня, вертикал…"></textarea>
           </div>
+          <div class="field">
+            <label for="attachment">Прикачен файл <span class="optional">(по желание)</span></label>
+            <input id="attachment" name="attachment" type="file" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf" />
+            <p class="field-hint">Снимка или PDF, до 4 MB</p>
+          </div>
           <button class="btn btn-primary" type="submit">Изпрати запитване</button>
           <p class="form-status" id="form-status" role="status" aria-live="polite"></p>
         </form>

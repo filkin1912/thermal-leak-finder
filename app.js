@@ -80,14 +80,26 @@
   if (form && status) {
     // Create key at https://web3forms.com while logged in as hydroinspect@gmail.com
     const WEB3FORMS_ACCESS_KEY = "3f00e71d-0b22-4d02-be8e-e80a3ae777a9";
+    // Used when a file is attached (Web3Forms free plan has no attachments)
+    const ATTACHMENT_SCRIPT_URL =
+      "https://script.google.com/macros/s/AKfycbz_g_l4qRYuCLZokUulYcVVktgdBxspoq0eASGIufhQJsmXEwsTLliBMuy0l_iBFBIx/exec";
+    const MAX_FILE_BYTES = 4 * 1024 * 1024;
     const submitBtn = form.querySelector('button[type="submit"]');
     const nameInput = form.querySelector("#name");
     const phoneInput = form.querySelector("#phone");
     const emailInput = form.querySelector("#email");
     const messageInput = form.querySelector("#message");
+    const fileInput = form.querySelector("#attachment");
 
     const PHONE_RE = /^(?:0\d{8,14}|\+[1-9]\d{7,14})$/;
     const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const ALLOWED_TYPES = new Set([
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "application/pdf",
+    ]);
 
     const sanitizePhone = () => {
       let value = phoneInput.value;
@@ -110,6 +122,17 @@
       input.reportValidity();
       status.textContent = message;
     };
+
+    const readFileAsBase64 = (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = String(reader.result || "");
+          resolve(result.includes(",") ? result.split(",")[1] : result);
+        };
+        reader.onerror = () => reject(reader.error || new Error("read failed"));
+        reader.readAsDataURL(file);
+      });
 
     if (phoneInput) {
       phoneInput.addEventListener("input", () => {
@@ -134,6 +157,13 @@
 
     if (messageInput) {
       messageInput.addEventListener("input", () => messageInput.setCustomValidity(""));
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener("change", () => {
+        fileInput.setCustomValidity("");
+        status.textContent = "";
+      });
     }
 
     form.addEventListener("submit", async (event) => {
@@ -178,6 +208,19 @@
         messageInput.setCustomValidity("");
       }
 
+      const file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
+      if (file) {
+        if (!ALLOWED_TYPES.has(file.type)) {
+          showInvalid(fileInput, "Позволени са само изображения (JPG, PNG, WEBP, GIF) или PDF.");
+          return;
+        }
+        if (file.size > MAX_FILE_BYTES) {
+          showInvalid(fileInput, "Файлът е твърде голям. Максимум 4 MB.");
+          return;
+        }
+        fileInput.setCustomValidity("");
+      }
+
       if (!form.checkValidity()) {
         form.reportValidity();
         status.textContent = "Моля, попълнете всички задължителни полета.";
@@ -190,45 +233,66 @@
         return;
       }
 
-      const data = new FormData(form);
-      const name = String(data.get("name") || "").trim();
-      const phone = String(data.get("phone") || "").trim();
-      const email = String(data.get("email") || "").trim();
-      const message = String(data.get("message") || "").trim();
+      const name = String(nameInput.value || "").trim();
+      const phone = String(phoneInput.value || "").trim();
+      const email = String(emailInput.value || "").trim();
+      const message = String(messageInput.value || "").trim();
 
       status.textContent = "Изпращане…";
       if (submitBtn) submitBtn.disabled = true;
 
       try {
-        const response = await fetch("https://api.web3forms.com/submit", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            access_key: WEB3FORMS_ACCESS_KEY,
-            subject: "Hydro-inspect",
-            from_name: "Хидроинспект",
-            replyto: email,
-            Име: name,
-            Телефон: phone,
-            Имейл: email,
-            Съобщение: message,
-          }),
-        });
+        if (file) {
+          const attachment = await readFileAsBase64(file);
+          const response = await fetch(ATTACHMENT_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({
+              name,
+              phone,
+              email,
+              message,
+              attachment,
+              attachmentName: file.name,
+              attachmentType: file.type,
+            }),
+          });
 
-        const result = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            throw new Error("Attachment send failed");
+          }
+        } else {
+          const response = await fetch("https://api.web3forms.com/submit", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({
+              access_key: WEB3FORMS_ACCESS_KEY,
+              subject: "Hydro-inspect",
+              from_name: "Хидроинспект",
+              replyto: email,
+              Име: name,
+              Телефон: phone,
+              Имейл: email,
+              Съобщение: message,
+            }),
+          });
 
-        if (!response.ok || result.success === false) {
-          throw new Error(result.message || "Send failed");
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok || result.success === false) {
+            throw new Error(result.message || "Send failed");
+          }
         }
 
         form.reset();
         status.textContent = "Благодарим Ви! Вашето запитване е изпратено успешно!";
       } catch (error) {
-        status.textContent =
-          "Запитването не беше изпратено. Проверете интернет връзката или опитайте отново.";
+        status.textContent = file
+          ? "Файлът не беше изпратен. Обновете Google Apps Script или опитайте без прикачен файл."
+          : "Запитването не беше изпратено. Проверете интернет връзката или опитайте отново.";
       } finally {
         if (submitBtn) submitBtn.disabled = false;
       }

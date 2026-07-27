@@ -1,10 +1,11 @@
 /**
- * Hydro-inspect contact form mailer
+ * Hydro-inspect contact form mailer (with optional attachment)
  *
  * Deploy:
- * 1. Open https://script.google.com → project "Hydro-inspect confirm"
+ * 1. Open https://script.google.com → project for hydroinspect@gmail.com
  * 2. Replace Code.gs with this file
- * 3. Deploy → Manage deployments → Edit (pencil) → New version → Deploy
+ * 3. Deploy → Manage deployments → Edit → New version → Deploy
+ * 4. Who has access: Anyone
  */
 function doPost(e) {
   try {
@@ -18,13 +19,22 @@ function doPost(e) {
       return json_({ success: false, message: "Missing email" });
     }
 
-    MailApp.sendEmail({
+    const mail = {
       to: "hydroinspect@gmail.com",
       subject: "Hydro-inspect",
       body: ["Име: " + name, "Телефон: " + phone, "Имейл: " + email, "Съобщение: " + message].join("\n"),
       name: "Хидроинспект",
       replyTo: email,
-    });
+    };
+
+    if (data.attachment && data.attachmentName && data.attachmentType) {
+      const bytes = Utilities.base64Decode(String(data.attachment));
+      mail.attachments = [
+        Utilities.newBlob(bytes, String(data.attachmentType), String(data.attachmentName)),
+      ];
+    }
+
+    MailApp.sendEmail(mail);
 
     MailApp.sendEmail({
       to: email,
