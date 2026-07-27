@@ -242,7 +242,11 @@
       if (submitBtn) submitBtn.disabled = true;
 
       try {
+        // With file: Apps Script uploads to Drive + notifies via Web3Forms
+        // (so inbox shows Хидроинспект, not "me")
+        // Without file: Web3Forms only
         if (file) {
+          status.textContent = "Качване и изпращане…";
           const attachment = await readFileAsBase64(file);
           const response = await fetch(ATTACHMENT_SCRIPT_URL, {
             method: "POST",
@@ -270,7 +274,7 @@
             },
             body: JSON.stringify({
               access_key: WEB3FORMS_ACCESS_KEY,
-              subject: "Hydro-inspect",
+              subject: "Хидроинспект — ново запитване",
               from_name: "Хидроинспект",
               replyto: email,
               Име: name,
@@ -291,7 +295,7 @@
         status.textContent = "Благодарим Ви! Вашето запитване е изпратено успешно!";
       } catch (error) {
         status.textContent = file
-          ? "Файлът не беше изпратен. Обновете Google Apps Script или опитайте без прикачен файл."
+          ? "Файлът не беше изпратен. Обновете Google Apps Script (нов Deploy) и опитайте отново."
           : "Запитването не беше изпратено. Проверете интернет връзката или опитайте отново.";
       } finally {
         if (submitBtn) submitBtn.disabled = false;
