@@ -7,7 +7,7 @@ COPY package.json ./
 RUN npm install --omit=dev
 
 COPY server.js ./
-COPY index.html styles.css app.js robots.txt sitemap.xml ./
+COPY index.html styles.css app.js robots.txt sitemap.xml googleeb941c266409de12.html ./
 COPY images/ ./images/
 
 ENV NODE_ENV=production
