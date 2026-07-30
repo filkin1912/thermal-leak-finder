@@ -9,6 +9,7 @@ RUN npm install --omit=dev
 COPY server.js ./
 COPY index.html styles.css app.js robots.txt sitemap.xml googleeb941c266409de12.html ./
 COPY images/ ./images/
+COPY otkrivane-na-techove/ ./otkrivane-na-techove/
 
 ENV NODE_ENV=production
 ENV PORT=8080
