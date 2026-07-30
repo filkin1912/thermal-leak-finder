@@ -111,6 +111,11 @@ app.get(["/", "/index.html"], (_req, res) => {
   res.sendFile(path.join(root, "index.html"));
 });
 
+app.get(["/otkrivane-na-techove", "/otkrivane-na-techove/"], (_req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.sendFile(path.join(root, "otkrivane-na-techove", "index.html"));
+});
+
 app.use(
   express.static(root, {
     index: false,
