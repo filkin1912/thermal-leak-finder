@@ -308,7 +308,105 @@ a:hover {
   max-width: 1512px;
   width: 100%;
   margin: 0 auto;
-  padding: clamp(1.75rem, 4vh, 2.75rem) 1.25rem clamp(2rem, 5vh, 3rem);
+  padding: clamp(2rem, 5.5vh, 3.75rem) 1.25rem clamp(2.25rem, 6vh, 4rem);
+  display: grid;
+  grid-template-columns: minmax(0, 65fr) minmax(0, 35fr);
+  align-items: center;
+  column-gap: clamp(1.25rem, 4vw, 3rem);
+  row-gap: 1.75rem;
+  min-height: clamp(360px, 58vh, 540px);
+}
+
+.hero-copy {
+  min-width: 0;
+  width: 100%;
+  max-width: 38rem;
+}
+
+.hero-camera {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  justify-self: center;
+  align-self: center;
+  text-align: center;
+  width: 360px;
+  max-width: 100%;
+  padding: 0.75rem 0 0.35rem;
+  animation: rise 0.9s var(--ease) 0.28s both;
+}
+
+.hero-camera::before {
+  content: "";
+  position: absolute;
+  inset: 2% -8% 10%;
+  z-index: -1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 42% 38%, rgba(126, 249, 224, 0.34) 0%, transparent 52%),
+    radial-gradient(circle at 62% 58%, rgba(232, 93, 4, 0.26) 0%, transparent 48%),
+    radial-gradient(circle at 50% 52%, rgba(10, 36, 48, 0.55) 0%, transparent 68%);
+  filter: blur(10px);
+  animation: drift 11s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.hero-camera::after {
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: 4%;
+  height: 16%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.28) 42%, transparent 74%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.hero-camera img {
+  display: block;
+  position: relative;
+  width: 360px;
+  height: 360px;
+  max-width: 100%;
+  margin: 0 auto;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 16px 32px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 28px rgba(46, 196, 182, 0.22));
+  animation: camera-float 5.5s ease-in-out 0.9s infinite;
+}
+
+.hero-camera-caption {
+  position: relative;
+  margin: 0.65rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--cool-bright);
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 12px rgba(6, 24, 32, 0.65);
+}
+
+@media (max-width: 640px) {
+  .hero-content {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    align-items: start;
+  }
+
+  .hero-camera {
+    justify-self: start;
+    width: min(360px, 72vw);
+    margin-top: 0.15rem;
+    padding: 0.35rem 0 0;
+  }
+
+  .hero-camera img {
+    width: min(360px, 72vw);
+    height: min(360px, 72vw);
+  }
 }
 
 .brand-hero {
@@ -327,7 +425,7 @@ a:hover {
 
 .hero h1 {
   margin: 0 0 0.75rem;
-  max-width: 18ch;
+  max-width: 21ch;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: clamp(1.35rem, 2.8vw, 1.85rem);
@@ -338,7 +436,7 @@ a:hover {
 
 .hero-lead {
   margin: 0 0 1.15rem;
-  max-width: 38ch;
+  max-width: 52ch;
   color: var(--ink-muted);
   font-size: 1rem;
   animation: rise 0.9s var(--ease) 0.22s both;
@@ -923,9 +1021,10 @@ a:hover {
 }
 
 .contacts-info {
-  display: flex;
+  display: grid;
+  grid-template-columns: 50fr 50fr;
   align-items: center;
-  justify-content: center;
+  column-gap: clamp(0.75rem, 2vw, 1.5rem);
   align-self: stretch;
   min-height: 100%;
   height: 100%;
@@ -938,8 +1037,69 @@ a:hover {
   justify-content: center;
   gap: 1.25rem;
   margin: 0;
-  width: auto;
+  width: 100%;
+  min-width: 0;
   min-height: 0;
+}
+
+.contacts-camera {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  justify-self: center;
+  text-align: center;
+  width: min(100%, 280px);
+}
+
+.contacts-camera::before {
+  content: "";
+  position: absolute;
+  inset: 4% -6% 12%;
+  z-index: -1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 42% 38%, rgba(126, 249, 224, 0.28) 0%, transparent 52%),
+    radial-gradient(circle at 62% 58%, rgba(232, 93, 4, 0.2) 0%, transparent 48%),
+    radial-gradient(circle at 50% 52%, rgba(10, 36, 48, 0.45) 0%, transparent 68%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.contacts-camera::after {
+  content: "";
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  bottom: 6%;
+  height: 14%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.22) 42%, transparent 74%);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+.contacts-camera img {
+  display: block;
+  position: relative;
+  width: 280px;
+  height: 280px;
+  max-width: 100%;
+  margin: 0 auto;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 12px 24px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 0 20px rgba(46, 196, 182, 0.18));
+}
+
+.contacts-camera-caption {
+  position: relative;
+  margin: 0.5rem 0 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--cool-bright);
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 12px rgba(6, 24, 32, 0.65);
 }
 
 .contact-block {
@@ -1101,6 +1261,16 @@ a:hover {
   }
 }
 
+@keyframes camera-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
 @keyframes drift {
   from {
     transform: translate(0, 0) scale(1);
@@ -1205,6 +1375,12 @@ a:hover {
   .contacts-grid {
     grid-template-columns: 1fr;
     gap: 1.25rem;
+  }
+
+  .contacts-info {
+    grid-template-columns: 1fr;
+    row-gap: 1.25rem;
+    justify-items: center;
   }
 
   .form-row {
