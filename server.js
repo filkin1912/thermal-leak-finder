@@ -116,6 +116,19 @@ app.get(["/otkrivane-na-techove", "/otkrivane-na-techove/"], (_req, res) => {
   res.sendFile(path.join(root, "otkrivane-na-techove", "index.html"));
 });
 
+app.get(["/otkrivane-na-techove-plovdiv", "/otkrivane-na-techove-plovdiv/"], (_req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.sendFile(path.join(root, "otkrivane-na-techove-plovdiv", "index.html"));
+});
+
+app.get(
+  ["/otkrivane-na-techove-s-termokamera", "/otkrivane-na-techove-s-termokamera/"],
+  (_req, res) => {
+    res.set("Cache-Control", "no-store");
+    res.sendFile(path.join(root, "otkrivane-na-techove-s-termokamera", "index.html"));
+  }
+);
+
 app.use(
   express.static(root, {
     index: false,
