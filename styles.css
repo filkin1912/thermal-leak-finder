@@ -1138,8 +1138,23 @@ a:hover {
   text-decoration: none;
 }
 
+a.contact-value {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg-deep) !important;
+  background: var(--cool);
+  padding: 0.55rem 1.15rem;
+  border-radius: 4px;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
 a.contact-value:hover {
-  color: var(--cool-bright);
+  background: var(--cool-bright);
+  color: var(--bg-deep) !important;
 }
 
 .contacts-call {
