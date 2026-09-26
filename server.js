@@ -5,6 +5,7 @@
  */
 const path = require("path");
 const express = require("express");
+const compression = require("compression");
 const multer = require("multer");
 
 const PORT = Number(process.env.PORT || 8080);
@@ -36,6 +37,7 @@ const app = express();
 const root = __dirname;
 
 app.disable("x-powered-by");
+app.use(compression());
 app.use(express.json({ limit: "32kb" }));
 app.use(express.urlencoded({ extended: false, limit: "32kb" }));
 

@@ -139,7 +139,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../styles.css?v=20260807a" />
+  <link rel="preload" as="image" href="../images/thermal-floor-leak-flir.webp" type="image/webp" fetchpriority="high" />
+  <link rel="preload" as="image" href="../images/hikmicro-m20.webp" type="image/webp" fetchpriority="high" />
+  <link rel="stylesheet" href="../styles.css?v=20260927a" />
 </head>
 <body>
   <a class="skip-link" href="#main">Към съдържанието</a>
@@ -161,7 +163,7 @@
       </nav>
 
       <div class="header-actions">
-        <a class="nav-contact" href="#contacts">
+        <a class="nav-contact" href="tel:+359885295680">
           <span class="nav-contact-label">Позвънете</span>
           <span class="nav-contact-phone">0885295680</span>
         </a>
@@ -187,7 +189,7 @@
           <h1 id="hero-title">Откриване на течове с термокамера в Пловдив</h1>
           <p class="hero-lead">Имате теч и не знаете откъде е? Откриване и намиране на теч с термокамера в Пловдив — без къртене, с термовизия и влагомер. След диагностиката — и ремонт на течове по желание.</p>
           <div class="hero-cta">
-            <a class="btn btn-primary" href="#contacts">Позвънете 0885295680</a>
+            <a class="btn btn-primary" href="tel:+359885295680">Позвънете 0885295680</a>
           </div>
           <ul class="hero-trust">
             <li>Без хаотично къртене</li>
@@ -196,7 +198,7 @@
           </ul>
         </div>
         <aside class="hero-camera" aria-label="Оборудване">
-          <img src="../images/hikmicro-m20.png" alt="Термокамера HIKMICRO M20 за намиране на течове" width="360" height="360" />
+          <img src="../images/hikmicro-m20.webp" alt="Термокамера HIKMICRO M20 за намиране на течове" width="360" height="360" decoding="async" fetchpriority="high" />
           <p class="hero-camera-caption">HIKMICRO M20</p>
         </aside>
       </div>
@@ -290,7 +292,7 @@
           </div>
         </div>
 
-        <a class="btn btn-primary" href="#contacts">Позвънете 0885295680</a>
+        <a class="btn btn-primary" href="tel:+359885295680">Позвънете 0885295680</a>
       </div>
     </section>
 
@@ -337,27 +339,45 @@
 
         <div class="gallery-grid">
           <figure class="gallery-item">
-            <img src="../images/thermal-compare-leak.png" alt="Намиране на течове с термокамера — сравнение видимо петно и термовизия" width="1200" height="600" loading="lazy" />
+            <picture>
+              <source srcset="../images/thermal-compare-leak.webp" type="image/webp" />
+              <img src="../images/thermal-compare-leak.png" alt="Намиране на течове с термокамера — сравнение видимо петно и термовизия" width="1200" height="600" loading="lazy" decoding="async" />
+            </picture>
             <figcaption>Видимо петно vs термовизия</figcaption>
           </figure>
           <figure class="gallery-item">
-            <img src="../images/thermal-wall-moisture.png" alt="Влага в стена при диагностика на теч — студена зона в синьо и лилаво" width="640" height="480" loading="lazy" />
+            <picture>
+              <source srcset="../images/thermal-wall-moisture.webp" type="image/webp" />
+              <img src="../images/thermal-wall-moisture.png" alt="Влага в стена при диагностика на теч — студена зона в синьо и лилаво" width="640" height="480" loading="lazy" decoding="async" />
+            </picture>
             <figcaption>Влага в стена (студена зона)</figcaption>
           </figure>
           <figure class="gallery-item">
-            <img src="../images/thermal-floor-leak-flir.png" alt="Откриване на скрит теч под плочки с термокамера в Пловдив" width="1280" height="960" loading="lazy" />
+            <picture>
+              <source srcset="../images/thermal-floor-leak-flir.webp" type="image/webp" />
+              <img src="../images/thermal-floor-leak-flir.png" alt="Откриване на скрит теч под плочки с термокамера в Пловдив" width="1280" height="960" loading="lazy" decoding="async" />
+            </picture>
             <figcaption>Скрит теч под плочки</figcaption>
           </figure>
           <figure class="gallery-item">
-            <img src="../images/thermal-floor-heating.png" alt="Термално изображение на подово отопление при търсене на теч" width="1600" height="900" loading="lazy" />
+            <picture>
+              <source srcset="../images/thermal-floor-heating.webp" type="image/webp" />
+              <img src="../images/thermal-floor-heating.png" alt="Термално изображение на подово отопление при търсене на теч" width="1600" height="900" loading="lazy" decoding="async" />
+            </picture>
             <figcaption>Контури на подово отопление</figcaption>
           </figure>
           <figure class="gallery-item">
-            <img src="../images/thermal-wall-pipes.png" alt="Локализиране на теч зад стена при водопроводни тръби" width="1200" height="900" loading="lazy" />
+            <picture>
+              <source srcset="../images/thermal-wall-pipes.webp" type="image/webp" />
+              <img src="../images/thermal-wall-pipes.png" alt="Локализиране на теч зад стена при водопроводни тръби" width="1200" height="900" loading="lazy" decoding="async" />
+            </picture>
             <figcaption>Теч зад стена при тръби</figcaption>
           </figure>
           <figure class="gallery-item">
-            <img src="../images/thermal-leak.png" alt="Локализиран теч по водопроводна тръба с термокамера" width="1600" height="900" loading="lazy" />
+            <picture>
+              <source srcset="../images/thermal-leak.webp" type="image/webp" />
+              <img src="../images/thermal-leak.png" alt="Локализиран теч по водопроводна тръба с термокамера" width="1600" height="900" loading="lazy" decoding="async" />
+            </picture>
             <figcaption>Локализиран теч по тръба</figcaption>
           </figure>
         </div>
@@ -370,7 +390,7 @@
           <div class="contact-details" id="contacts-title">
             <div class="contact-block">
               <span class="label">Телефон</span>
-              <span class="contact-value">0885295680</span>
+              <a class="contact-value" href="tel:+359885295680">0885295680</a>
             </div>
             <div class="contact-block">
               <span class="label">Район</span>
@@ -378,7 +398,7 @@
             </div>
           </div>
           <aside class="contacts-camera" aria-label="Оборудване">
-            <img src="../images/hikmicro-m20.png" alt="Термокамера HIKMICRO M20 за намиране на течове" width="280" height="280" />
+            <img src="../images/hikmicro-m20.webp" alt="Термокамера HIKMICRO M20 за намиране на течове" width="280" height="280" loading="lazy" decoding="async" />
             <p class="contacts-camera-caption">HIKMICRO M20</p>
           </aside>
         </div>
@@ -424,6 +444,6 @@
     </div>
   </footer>
 
-  <script src="../app.js?v=20260727j"></script>
+  <script src="../app.js?v=20260927a"></script>
 </body>
 </html>
